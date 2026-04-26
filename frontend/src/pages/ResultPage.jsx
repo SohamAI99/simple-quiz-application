@@ -1,18 +1,18 @@
-// ResultPage.jsx — Two-column: score details on left, actions on right
+import { Trophy, Star, ThumbsUp, Smile, RefreshCw, Award, Home, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
 
 const CAT_LABELS = {
-  gk:          "General Knowledge 🌍",
-  programming:  "Programming 💻",
-  aptitude:     "Aptitude 🧮",
+  gk:          "General Knowledge",
+  programming:  "Programming",
+  aptitude:     "Aptitude",
 };
 
 function getFeedback(score, total) {
   const pct = (score / total) * 100;
-  if (pct === 100) return { emoji: "🏆", label: "Perfect!",   cls: "badge-excellent" };
-  if (pct >= 80)   return { emoji: "🌟", label: "Excellent!", cls: "badge-excellent" };
-  if (pct >= 60)   return { emoji: "👍", label: "Good job!",  cls: "badge-good"      };
-  if (pct >= 40)   return { emoji: "😊", label: "Not bad!",   cls: "badge-good"      };
-  return                  { emoji: "😅", label: "Try again!", cls: "badge-tryagain"  };
+  if (pct === 100) return { icon: <Trophy size={20} />, label: "Perfect!",   cls: "badge-excellent" };
+  if (pct >= 80)   return { icon: <Star size={20} />,   label: "Excellent!", cls: "badge-excellent" };
+  if (pct >= 60)   return { icon: <ThumbsUp size={20} />, label: "Good job!",  cls: "badge-good"      };
+  if (pct >= 40)   return { icon: <Smile size={20} />,    label: "Not bad!",   cls: "badge-good"      };
+  return                  { icon: <RefreshCw size={20} />, label: "Keep going!", cls: "badge-tryagain"  };
 }
 
 function ResultPage({ userName, category, score, total, onRestart, onViewLeaderboard }) {
@@ -29,7 +29,7 @@ function ResultPage({ userName, category, score, total, onRestart, onViewLeaderb
       <div className="result-layout">
         {/* ── Left: Score breakdown ── */}
         <div className="result-main card">
-          <div style={{ fontSize: "2.5rem", marginBottom: 8 }}>{fb.emoji}</div>
+          <div style={{ marginBottom: 12, color: 'var(--blue-light)' }}>{fb.icon}</div>
 
           {/* Big score number */}
           <div className="result-score-big">

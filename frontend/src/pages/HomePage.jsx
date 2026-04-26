@@ -1,38 +1,48 @@
-// HomePage.jsx — Two-column layout: form on left, live mini-leaderboard on right
-
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+import { Globe, Code, Calculator, TrendingUp, Award, Clock } from "lucide-react";
+
 const CATEGORIES = [
-  { key: "gk",          icon: "🌍", name: "General Knowledge", desc: "Geography, science & world facts" },
-  { key: "programming", icon: "💻", name: "Programming",        desc: "HTML, CSS, JavaScript & web dev"  },
-  { key: "aptitude",    icon: "🧮", name: "Aptitude",           desc: "Math, logic & problem solving"    },
+  { key: "gk",          icon: <Globe size={20} />, name: "General Knowledge", desc: "Geography, science & world facts" },
+  { key: "programming", icon: <Code size={20} />, name: "Programming",        desc: "HTML, CSS, JavaScript & web dev"  },
+  { key: "aptitude",    icon: <Calculator size={20} />, name: "Aptitude",           desc: "Math, logic & problem solving"    },
 ];
 
-const RANK_EMOJI = { 0: "🥇", 1: "🥈", 2: "🥉" };
+const RANK_ICONS = { 0: <Award size={18} color="var(--gold)" />, 1: <Award size={18} color="#94a3b8" />, 2: <Award size={18} color="#b45309" /> };
 
 function HomePage({ onStartQuiz }) {
-  const [name, setName]               = useState("");
+  const { user } = useAuth();
   const [leaderboard, setLeaderboard] = useState([]);
-  const intervalRef                   = useRef(null);
+  const [stats, setStats] = useState(null);
+  const intervalRef = useRef(null);
 
-  // Fetch leaderboard immediately and then every 5 seconds
   const fetchLeaderboard = async () => {
     try {
-      const res  = await fetch(`${API_BASE}/leaderboard`);
-      const data = await res.json();
-      setLeaderboard(data.leaderboard.slice(0, 6)); // show top 6 in mini view
+      const res = await axios.get(`${API_BASE}/leaderboard`);
+      setLeaderboard(res.data.leaderboard.slice(0, 6));
+    } catch (_) {}
+  };
+
+  const fetchUserStats = async () => {
+    if (!user) return;
+    try {
+      const res = await axios.get(`${API_BASE}/user-history/${user.id}`);
+      setStats(res.data.stats);
     } catch (_) {}
   };
 
   useEffect(() => {
     fetchLeaderboard();
+    fetchUserStats();
     intervalRef.current = setInterval(fetchLeaderboard, 5000);
     return () => clearInterval(intervalRef.current);
-  }, []);
+  }, [user]);
 
-  const canStart = name.trim().length > 0;
+  const canStart = true; // User is logged in if they are on this page
 
   return (
     <div className="home-layout">
@@ -47,33 +57,25 @@ function HomePage({ onStartQuiz }) {
         </p>
 
         <div className="card">
-          <label className="input-label" htmlFor="name-input">Your name</label>
-          <input
-            id="name-input"
-            className="input-field"
-            type="text"
-            placeholder="e.g. Soham"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={30}
-            autoFocus
-            onKeyDown={(e) => {
-              // Allow pressing Enter then clicking the first enabled category
-              if (e.key === "Enter" && canStart) {
-                onStartQuiz(name.trim(), "gk");
-              }
-            }}
-          />
+          <h2 className="sidebar-title" style={{ marginBottom: 12 }}>Welcome, {user?.name}!</h2>
+          <div className="stats-strip">
+            <div className="stat-box">
+              <div className="sidebar-title" style={{ fontSize: '0.65rem' }}>Attempts</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--blue-light)' }}>{stats?.totalAttempts || 0}</div>
+            </div>
+            <div className="stat-box">
+              <div className="sidebar-title" style={{ fontSize: '0.65rem' }}>Best Score</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--gold)' }}>{stats?.bestScore || 0}/10</div>
+            </div>
+          </div>
 
+          <label className="input-label" style={{ marginTop: 20 }}>Select Category</label>
           <div className="category-list">
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.key}
-                id={`start-${cat.key}`}
                 className="category-btn"
-                onClick={() => onStartQuiz(name.trim(), cat.key)}
-                disabled={!canStart}
-                title={canStart ? `Start ${cat.name}` : "Enter your name first"}
+                onClick={() => onStartQuiz(user.name, cat.key)}
               >
                 <span className="cat-icon">{cat.icon}</span>
                 <div className="cat-info">
@@ -84,10 +86,6 @@ function HomePage({ onStartQuiz }) {
               </button>
             ))}
           </div>
-
-          {!canStart && (
-            <p className="name-hint">Enter your name above to start a quiz.</p>
-          )}
         </div>
       </div>
 
@@ -103,12 +101,8 @@ function HomePage({ onStartQuiz }) {
             <div className="stat-label">Categories</div>
           </div>
           <div className="stat-box">
-            <div className="stat-number">{leaderboard.length}</div>
-            <div className="stat-label">Players</div>
-          </div>
-          <div className="stat-box">
             <div className="stat-number">
-              {leaderboard.length > 0 ? `${leaderboard[0].score}/${leaderboard[0].total}` : "—"}
+              {leaderboard.length > 0 ? `${leaderboard[0].score}/10` : "—"}
             </div>
             <div className="stat-label">Top Score</div>
           </div>
@@ -124,13 +118,13 @@ function HomePage({ onStartQuiz }) {
             <div className="empty-mini">No scores yet — be the first!</div>
           ) : (
             leaderboard.map((entry, i) => (
-              <div className="mini-lb-row" key={entry.id}>
+              <div className="mini-lb-row" key={entry.id || i}>
                 <span className="mini-rank">
-                  {RANK_EMOJI[i] ?? `#${i + 1}`}
+                  {RANK_ICONS[i] ?? `#${i + 1}`}
                 </span>
                 <span className="mini-name">{entry.name}</span>
-                <span className="mini-score">{entry.score}/{entry.total}</span>
-                <span className="mini-cat">{entry.category}</span>
+                <span className="mini-score">{entry.score}/10</span>
+                <span className="mini-cat" style={{ fontSize: '0.65rem', textTransform: 'capitalize' }}>{entry.category}</span>
               </div>
             ))
           )}

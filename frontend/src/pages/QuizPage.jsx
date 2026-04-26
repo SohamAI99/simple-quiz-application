@@ -1,16 +1,16 @@
-// QuizPage.jsx — Two-column: question on left, sidebar on right
-
 import { useState, useEffect } from "react";
+import axios from "axios";
+import { Globe, Code, Calculator, Timer, ChevronRight, CheckCircle2, User } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const CAT_META = {
-  gk:          { label: "General Knowledge", icon: "🌍" },
-  programming:  { label: "Programming",       icon: "💻" },
-  aptitude:     { label: "Aptitude",          icon: "🧮" },
+  gk:          { label: "General Knowledge", icon: <Globe size={18} /> },
+  programming:  { label: "Programming",       icon: <Code size={18} /> },
+  aptitude:     { label: "Aptitude",          icon: <Calculator size={18} /> },
 };
 
-function QuizPage({ userName, category, onFinish, onGoHome }) {
+function QuizPage({ userName, userId, category, onFinish, onGoHome }) {
   const [questions,      setQuestions]      = useState([]);
   const [currentIndex,   setCurrentIndex]   = useState(0);
   const [selectedOption, setSelectedOption] = useState("");
@@ -57,17 +57,28 @@ function QuizPage({ userName, category, onFinish, onGoHome }) {
   };
 
   const submitQuiz = async () => {
-    let score = 0;
-    questions.forEach((q, i) => { if (answers[i] === q.answer) score++; });
+    const finalAnswers = questions.map((q, i) => ({
+      question: q.question,
+      selectedAnswer: answers[i] || "Not Answered",
+      correctAnswer: q.answer,
+      isCorrect: answers[i] === q.answer
+    }));
+
+    const score = finalAnswers.filter(a => a.isCorrect).length;
     const total = questions.length;
 
     try {
-      await fetch(`${API_BASE}/score`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ name: userName, score, total, category }),
+      await axios.post(`${API_BASE}/submit-quiz`, {
+        userId,
+        name: userName,
+        category,
+        score,
+        totalQuestions: total,
+        answers: finalAnswers
       });
-    } catch (_) {}
+    } catch (err) {
+      console.error("Error saving score", err);
+    }
 
     onFinish({ score, total });
   };
@@ -186,7 +197,7 @@ function QuizPage({ userName, category, onFinish, onGoHome }) {
           <div className="sidebar-card">
             <div className="sidebar-title">Player</div>
             <div className="sidebar-user-info">
-              <div className="user-avatar">👤</div>
+              <div className="user-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><User size={20} color="var(--blue-light)" /></div>
               <div>
                 <div className="user-name">{userName}</div>
                 <div className="user-cat">{meta.label}</div>
