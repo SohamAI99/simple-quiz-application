@@ -37,7 +37,8 @@ app.post("/register", async (req, res) => {
 
     res.status(201).json({ message: "User registered successfully!" });
   } catch (err) {
-    res.status(500).json({ error: "Server error during registration" });
+    console.error("Registration Error:", err);
+    res.status(500).json({ error: "Server error during registration", details: err.message });
   }
 });
 
@@ -53,7 +54,8 @@ app.post("/login", async (req, res) => {
     const token = jwt.sign({ id: user._id, name: user.name }, JWT_SECRET, { expiresIn: '1d' });
     res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
   } catch (err) {
-    res.status(500).json({ error: "Server error during login" });
+    console.error("Login Error:", err);
+    res.status(500).json({ error: "Server error during login", details: err.message });
   }
 });
 
