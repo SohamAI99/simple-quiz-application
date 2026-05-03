@@ -24,7 +24,7 @@ function App() {
           setPage("home");
         }
       } else {
-        if (page === "home" || page === "quiz") {
+        if (page !== "landing" && page !== "login" && page !== "register") {
           setPage("landing");
         }
       }
